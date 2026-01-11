@@ -1,6 +1,7 @@
 from django.db.models import OuterRef, Subquery, Q
 from rest_framework import viewsets
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, OpenApiParameter
+from drf_spectacular.types import OpenApiTypes
 from .models import RoadSegment, SpeedReading
 from .serializers import RoadSegmentSerializer, SpeedReadingSerializer
 from .permissions import IsAdminOrReadOnly
@@ -57,6 +58,20 @@ class RoadSegmentViewSet(viewsets.ModelViewSet):
                 )
 
         return queryset
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="traffic_intensity",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                description="Filter by traffic intensity of latest reading",
+                enum=["elevada", "média", "baixa"],
+            ),
+        ]
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
 
     def get_serializer_context(self):
         return {"request": self.request}
