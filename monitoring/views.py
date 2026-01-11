@@ -23,19 +23,6 @@ class RoadSegmentViewSet(viewsets.ModelViewSet):
     serializer_class = RoadSegmentSerializer
     permission_classes = [IsAdminOrReadOnly]
 
-    def get_queryset(self):
-        """
-        Optionally filter by road_segment if query parameter is provided.
-        Example: /api/speed-readings/?road_segment=id
-        """
-        queryset = RoadSegment.objects.select_related("road_segment").all()
-        road_segment_id = self.request.query_params.get("road_segment", None)
-
-        if road_segment_id is not None:
-            queryset = queryset.filter(road_segment_id=road_segment_id)
-
-        return queryset
-
     def get_serializer_context(self):
         return {"request": self.request}
 
