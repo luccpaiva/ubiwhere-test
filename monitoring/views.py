@@ -1,3 +1,4 @@
+from django.db.models import OuterRef, Subquery, Q
 from rest_framework import viewsets
 from drf_spectacular.utils import extend_schema
 from .models import RoadSegment, SpeedReading
@@ -13,6 +14,9 @@ from .permissions import IsAdminOrReadOnly
     **Permissions:**
     - Anonymous users: Read-only (GET, HEAD, OPTIONS)
     - Admin users: Full access (GET, POST, PUT, PATCH, DELETE)
+    
+    **Filtering:**
+    - Use ?traffic_intensity={elevada|média|baixa} to filter by latest reading's traffic intensity
     """,
 )
 class RoadSegmentViewSet(viewsets.ModelViewSet):
@@ -21,6 +25,38 @@ class RoadSegmentViewSet(viewsets.ModelViewSet):
     queryset = RoadSegment.objects.all()
     serializer_class = RoadSegmentSerializer
     permission_classes = [IsAdminOrReadOnly]
+
+    def get_queryset(self):
+        queryset = RoadSegment.objects.all()
+        traffic_intensity = self.request.query_params.get("traffic_intensity", None)
+
+        if traffic_intensity is not None:
+            # Get the latest reading's speed for each segment
+            latest_reading = SpeedReading.objects.filter(
+                road_segment=OuterRef("pk")
+            ).order_by("-timestamp")[:1]
+
+            queryset = queryset.annotate(
+                latest_speed=Subquery(latest_reading.values("average_speed")[:1])
+            )
+
+            # Filter based on traffic intensity thresholds
+            if traffic_intensity == "elevada":
+                queryset = queryset.filter(
+                    Q(latest_speed__isnull=False) & Q(latest_speed__lte=20)
+                )
+            elif traffic_intensity == "média":
+                queryset = queryset.filter(
+                    Q(latest_speed__isnull=False)
+                    & Q(latest_speed__gt=20)
+                    & Q(latest_speed__lte=50)
+                )
+            elif traffic_intensity == "baixa":
+                queryset = queryset.filter(
+                    Q(latest_speed__isnull=False) & Q(latest_speed__gt=50)
+                )
+
+        return queryset
 
     def get_serializer_context(self):
         return {"request": self.request}
