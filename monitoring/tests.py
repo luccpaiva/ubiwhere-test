@@ -3,6 +3,7 @@ from rest_framework.test import APITestCase
 from rest_framework import status
 from django.utils import timezone
 from decimal import Decimal
+from datetime import timedelta
 
 from .models import RoadSegment, SpeedReading
 
@@ -82,6 +83,91 @@ class RoadSegmentViewSetTestCase(APITestCase):
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(RoadSegment.objects.count(), 0)
+
+    def test_filter_by_traffic_intensity_elevada(self):
+        segment_elevada = RoadSegment.objects.create(
+            start_longitude=Decimal("104.0"),
+            start_latitude=Decimal("30.7"),
+            end_longitude=Decimal("104.1"),
+            end_latitude=Decimal("30.8"),
+            length=Decimal("1500.50"),
+        )
+        SpeedReading.objects.create(
+            road_segment=segment_elevada,
+            average_speed=Decimal("18.50"),
+            timestamp=timezone.now(),
+        )
+
+        url = "/api/road-segments/?traffic_intensity=elevada"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["id"], segment_elevada.id)
+
+    def test_filter_by_traffic_intensity_media(self):
+        segment_media = RoadSegment.objects.create(
+            start_longitude=Decimal("104.2"),
+            start_latitude=Decimal("30.9"),
+            end_longitude=Decimal("104.3"),
+            end_latitude=Decimal("31.0"),
+            length=Decimal("1600.00"),
+        )
+        SpeedReading.objects.create(
+            road_segment=segment_media,
+            average_speed=Decimal("35.00"),
+            timestamp=timezone.now(),
+        )
+
+        url = "/api/road-segments/?traffic_intensity=média"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["id"], segment_media.id)
+
+    def test_filter_by_traffic_intensity_baixa(self):
+        segment_baixa = RoadSegment.objects.create(
+            start_longitude=Decimal("104.4"),
+            start_latitude=Decimal("31.1"),
+            end_longitude=Decimal("104.5"),
+            end_latitude=Decimal("31.2"),
+            length=Decimal("1700.00"),
+        )
+        SpeedReading.objects.create(
+            road_segment=segment_baixa,
+            average_speed=Decimal("65.00"),
+            timestamp=timezone.now(),
+        )
+
+        url = "/api/road-segments/?traffic_intensity=baixa"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["id"], segment_baixa.id)
+
+    def test_filter_by_traffic_intensity_latest_reading(self):
+        segment1 = RoadSegment.objects.create(
+            start_longitude=Decimal("104.6"),
+            start_latitude=Decimal("31.3"),
+            end_longitude=Decimal("104.7"),
+            end_latitude=Decimal("31.4"),
+            length=Decimal("1800.00"),
+        )
+        SpeedReading.objects.create(
+            road_segment=segment1,
+            average_speed=Decimal("15.00"),
+            timestamp=timezone.now() - timedelta(hours=2),
+        )
+        SpeedReading.objects.create(
+            road_segment=segment1,
+            average_speed=Decimal("55.00"),
+            timestamp=timezone.now(),
+        )
+
+        url = "/api/road-segments/?traffic_intensity=baixa"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        segment_ids = [seg["id"] for seg in response.data]
+        self.assertIn(segment1.id, segment_ids)
 
 
 class SpeedReadingViewSetTestCase(APITestCase):
