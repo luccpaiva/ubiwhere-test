@@ -4,6 +4,8 @@ from django.utils import timezone
 
 
 class RoadSegmentSerializer(serializers.ModelSerializer):
+    """Serializer for RoadSegment model with validation for coordinates and length."""
+
     total_readings = serializers.IntegerField(read_only=True)
 
     class Meta:
@@ -48,6 +50,8 @@ class RoadSegmentSerializer(serializers.ModelSerializer):
 
 
 class SpeedReadingSerializer(serializers.ModelSerializer):
+    """Serializer for SpeedReading model with traffic intensity calculation."""
+
     traffic_intensity = serializers.CharField(read_only=True)
 
     class Meta:

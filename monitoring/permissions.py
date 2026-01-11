@@ -2,11 +2,7 @@ from rest_framework import permissions
 
 
 class IsAdminOrReadOnly(permissions.BasePermission):
-    """
-    Custom permission class:
-    - Anonymous users can only read (GET, HEAD, OPTIONS)
-    - Admin users (is_staff=True) can perform all operations
-    """
+    """Allows read-only access for anonymous users and full access for admin users."""
 
     def has_permission(self, request, view):
         # SAFE_METHODS are GET, HEAD, OPTIONS

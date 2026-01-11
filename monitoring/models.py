@@ -2,6 +2,8 @@ from django.db import models
 
 
 class RoadSegment(models.Model):
+    """Represents a road segment with geographic coordinates."""
+
     start_longitude = models.DecimalField(max_digits=10, decimal_places=7)
     start_latitude = models.DecimalField(max_digits=10, decimal_places=7)
 
@@ -24,7 +26,8 @@ class RoadSegment(models.Model):
 
 
 class SpeedReading(models.Model):
-    # Link to road segment
+    """Represents a speed reading for a road segment with traffic intensity calculation."""
+
     road_segment = models.ForeignKey(
         RoadSegment, on_delete=models.CASCADE, related_name="speedreadings"
     )
